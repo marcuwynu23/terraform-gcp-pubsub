@@ -1,0 +1,12 @@
+project_id               = "your-project-id"
+region                   = "us-central1"
+topic_name               = "my-topic"
+message_retention_duration = "86600s"
+labels                   = { environment = "dev" }
+subscription_name        = "my-subscription"
+ack_deadline_seconds     = 20
+push_endpoint            = ""
+expiration_ttl           = "86400s"
+min_retry_backoff        = "10s"
+max_retry_backoff        = "600s"
+enable_message_ordering  = false
