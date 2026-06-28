@@ -1,0 +1,118 @@
+name: CD - GCP Pub/Sub (Apply / Destroy)
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: Terraform operation
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
+        default: apply
+      project_id:
+        description: GCP project ID
+        required: true
+        type: string
+      region:
+        description: "GCP region (Free Tier: us-east1, us-west1, us-central1)"
+        required: true
+        type: string
+        default: us-central1
+      topic_name:
+        description: Pub/Sub topic name
+        required: true
+        type: string
+        default: my-topic
+      message_retention_duration:
+        description: Message retention duration
+        required: true
+        type: string
+        default: 86600s
+      labels:
+        description: Topic labels as HCL map, e.g. {"env"="dev"}
+        required: false
+        type: string
+        default: '{"environment"="dev"}'
+      subscription_name:
+        description: Pub/Sub subscription name
+        required: true
+        type: string
+        default: my-subscription
+      ack_deadline_seconds:
+        description: Acknowledgement deadline in seconds
+        required: true
+        type: number
+        default: 20
+      push_endpoint:
+        description: Push endpoint URL (leave empty for pull)
+        required: false
+        type: string
+        default: ""
+      expiration_ttl:
+        description: Subscription expiration TTL
+        required: true
+        type: string
+        default: 86400s
+      min_retry_backoff:
+        description: Minimum retry backoff
+        required: true
+        type: string
+        default: 10s
+      max_retry_backoff:
+        description: Maximum retry backoff
+        required: true
+        type: string
+        default: 600s
+      enable_message_ordering:
+        description: Enable message ordering
+        required: false
+        type: boolean
+        default: false
+
+env: {}
+
+jobs:
+  provision:
+    name: Terraform ${{ github.event.inputs.command }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+      - name: Terraform Init
+        run: terraform init
+      - name: Terraform Plan
+        run: |
+          terraform plan ${{ github.event.inputs.command == 'destroy' && '-destroy' || '' }} \
+            -var="project_id=${{ github.event.inputs.project_id }}" \
+            -var="region=${{ github.event.inputs.region }}" \
+            -var="topic_name=${{ github.event.inputs.topic_name }}" \
+            -var="message_retention_duration=${{ github.event.inputs.message_retention_duration }}" \
+            -var="labels=${{ github.event.inputs.labels }}" \
+            -var="subscription_name=${{ github.event.inputs.subscription_name }}" \
+            -var="ack_deadline_seconds=${{ github.event.inputs.ack_deadline_seconds }}" \
+            -var="push_endpoint=${{ github.event.inputs.push_endpoint }}" \
+            -var="expiration_ttl=${{ github.event.inputs.expiration_ttl }}" \
+            -var="min_retry_backoff=${{ github.event.inputs.min_retry_backoff }}" \
+            -var="max_retry_backoff=${{ github.event.inputs.max_retry_backoff }}" \
+            -var="enable_message_ordering=${{ github.event.inputs.enable_message_ordering }}"
+      - name: Terraform Apply / Destroy
+        run: |
+          terraform ${{ github.event.inputs.command }} -auto-approve \
+            -var="project_id=${{ github.event.inputs.project_id }}" \
+            -var="region=${{ github.event.inputs.region }}" \
+            -var="topic_name=${{ github.event.inputs.topic_name }}" \
+            -var="message_retention_duration=${{ github.event.inputs.message_retention_duration }}" \
+            -var="labels=${{ github.event.inputs.labels }}" \
+            -var="subscription_name=${{ github.event.inputs.subscription_name }}" \
+            -var="ack_deadline_seconds=${{ github.event.inputs.ack_deadline_seconds }}" \
+            -var="push_endpoint=${{ github.event.inputs.push_endpoint }}" \
+            -var="expiration_ttl=${{ github.event.inputs.expiration_ttl }}" \
+            -var="min_retry_backoff=${{ github.event.inputs.min_retry_backoff }}" \
+            -var="max_retry_backoff=${{ github.event.inputs.max_retry_backoff }}" \
+            -var="enable_message_ordering=${{ github.event.inputs.enable_message_ordering }}"
